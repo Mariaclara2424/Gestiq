@@ -104,3 +104,21 @@ INSERT INTO projetos (titulo, descricao, data_inicio, data_fim, status, id_respo
 
 INSERT INTO tarefas (titulo, descricao, id_projeto, id_responsavel, data_vencimento, status, prioridade) VALUES 
 ('Wireframes', 'Telas', 1, 3, '2025-02-28', 'concluida', 'alta');
+
+CREATE TABLE google_tokens (
+    id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    usuario_id    INT UNSIGNED NOT NULL,
+    access_token  TEXT         NOT NULL,
+    refresh_token TEXT         NOT NULL,
+    atualizado_em TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+O INT UNSIGNED precisa bater exatamente com o tipo do id_usuario na tabela usuarios.
+
+Depois de recriar a tabela, tente conectar o Google Calendar novamente. Se aparecer um erro diferente, me manda o texto exato que eu identifico na hora.Você disse: me manda o link do phpadminme manda o link do phpadmin12:24Claude respondeu: Não tenho como te mandar um link do phpMyAdmin — ele roda localmente na sua máquina, não na internet.Não tenho como te mandar um link do phpMyAdmin — ele roda localmente na sua máquina, não na internet.
+Acesse direto pelo navegador:
+http://localhost/phpmyadmin
+ou
+http://127.0.0.1/phpmyadmin
+O XAMPP precisa estar rodando (painel do XAMPP com Apache e MySQL em verde). Se quiser, também pode abrir direto pelo painel do XAMPP clicando em Admin na linha do MySQL.

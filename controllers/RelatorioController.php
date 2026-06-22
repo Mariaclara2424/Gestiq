@@ -12,7 +12,6 @@ class RelatorioController
         $this->db = Database::getConnection();
     }
 
-    // ... resto do código continua igualzinho para baixo ...
     /* ------------------------------------------------------------------ */
     /* VISÃO GERAL                                                           */
     /* ------------------------------------------------------------------ */
@@ -20,11 +19,18 @@ class RelatorioController
     public function index(): void
     {
         $tipo = $_GET['tipo'] ?? 'projetos';
+
+        // Se vier &exportar=pdf, desvia para o gerador de PDF antes de carregar a view
+        if (!empty($_GET['exportar']) && $_GET['exportar'] === 'pdf') {
+            $this->exportarPdf($tipo);
+            return;
+        }
+
         $dados = match ($tipo) {
-            'tarefas'      => $this->dadosTarefas(),
-            'usuarios'     => $this->dadosUsuarios(),
+            'tarefas'       => $this->dadosTarefas(),
+            'usuarios'      => $this->dadosUsuarios(),
             'departamentos' => $this->dadosDepartamentos(),
-            default        => $this->dadosProjetos(),
+            default         => $this->dadosProjetos(),
         };
 
         require ROOT_PATH . '/views/relatorios/index.php';
@@ -60,7 +66,7 @@ class RelatorioController
     public function tarefas(): void
     {
         $filtros = [];
-        if (!empty($_GET['status']))     $filtros['status']    = $_GET['status'];
+        if (!empty($_GET['status']))     $filtros['status']     = $_GET['status'];
         if (!empty($_GET['prioridade'])) $filtros['prioridade'] = $_GET['prioridade'];
         if (!empty($_GET['id_projeto'])) $filtros['id_projeto'] = (int) $_GET['id_projeto'];
 
@@ -76,6 +82,122 @@ class RelatorioController
     }
 
     /* ------------------------------------------------------------------ */
+    /* EXPORTAR PDF — detecta o tipo e gera o relatório correspondente      */
+    /* ------------------------------------------------------------------ */
+
+    private function exportarPdf(string $tipo): void
+    {
+        // Coleta filtros ativos da URL
+        $filtros = [];
+        if (!empty($_GET['status']))           $filtros['status']          = $_GET['status'];
+        if (!empty($_GET['id_departamento'])) $filtros['id_departamento'] = (int) $_GET['id_departamento'];
+        if (!empty($_GET['id_projeto']))      $filtros['id_projeto']      = (int) $_GET['id_projeto'];
+        if (!empty($_GET['prioridade']))      $filtros['prioridade']      = $_GET['prioridade'];
+
+        // Busca os dados do tipo selecionado
+        $dados = match ($tipo) {
+            'tarefas'       => $this->dadosTarefas($filtros),
+            'usuarios'      => $this->dadosUsuarios(),
+            'departamentos' => $this->dadosDepartamentos(),
+            default         => $this->dadosProjetos($filtros),
+        };
+
+        $tituloRelatorio = match ($tipo) {
+            'tarefas'       => 'Relatório de Tarefas',
+            'usuarios'      => 'Relatório de Usuários',
+            'departamentos' => 'Relatório de Departamentos',
+            default         => 'Relatório de Projetos',
+        };
+
+        $nomeArquivo = 'relatorio_' . $tipo . '_' . date('Y-m-d') . '.pdf';
+        $dataGeracao = date('d/m/Y \à\s H:i');
+        $total       = count($dados['linhas']);
+
+        // ── Monta o HTML ──────────────────────────────────────────────────
+        $html = <<<HTML
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                * { margin:0; padding:0; box-sizing:border-box; }
+                body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1a1a2e; padding:20px; }
+                .cabecalho { border-bottom:3px solid #4a0e8f; padding-bottom:10px; margin-bottom:16px; }
+                .cabecalho h1 { font-size:18px; color:#4a0e8f; }
+                .cabecalho p  { font-size:9px; color:#666; margin-top:3px; }
+                .sumario { background:#f0e6ff; border-left:4px solid #4a0e8f; padding:6px 12px; margin-bottom:14px; font-size:9px; }
+                .sumario strong { color:#4a0e8f; }
+                table { width:100%; border-collapse:collapse; }
+                thead tr { background:#4a0e8f; color:#fff; }
+                thead th { padding:7px 5px; text-align:left; font-size:9px; text-transform:uppercase; letter-spacing:0.4px; }
+                tbody tr:nth-child(even) { background:#f7f0ff; }
+                tbody tr:nth-child(odd)  { background:#fff; }
+                tbody td { padding:6px 5px; border-bottom:1px solid #e0d0f0; vertical-align:middle; }
+                .rodape { margin-top:20px; border-top:1px solid #ccc; padding-top:6px; font-size:8px; color:#888; text-align:center; }
+            </style>
+        </head>
+        <body>
+            <div class="cabecalho">
+                <h1>GestIQ &mdash; {$tituloRelatorio}</h1>
+                <p>Gerado em: {$dataGeracao}</p>
+            </div>
+            <div class="sumario">
+                <strong>Total de registros:</strong> {$total}
+            </div>
+            <table><thead><tr>
+        HTML;
+
+        // Cabeçalho dinâmico
+        foreach ($dados['cabecalho'] as $th) {
+            $html .= '<th>' . htmlspecialchars($th, ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+
+        // Linhas de dados
+        if (empty($dados['linhas'])) {
+            $colspan = count($dados['cabecalho']);
+            $html .= "<tr><td colspan=\"{$colspan}\" style=\"text-align:center;color:#888;padding:20px;\">Nenhum registro encontrado.</td></tr>";
+        } else {
+            foreach ($dados['linhas'] as $linha) {
+                $html .= '<tr>';
+                foreach ($linha as $celula) {
+                    $html .= '<td>' . htmlspecialchars((string)$celula, ENT_QUOTES, 'UTF-8') . '</td>';
+                }
+                $html .= '</tr>';
+            }
+        }
+
+        $html .= <<<HTML
+                </tbody></table>
+            <div class="rodape">
+                GestIQ &mdash; Documento gerado automaticamente em {$dataGeracao}
+            </div>
+        </body></html>
+        HTML;
+
+        // ── Renderiza via Dompdf e dispara download ───────────────────────
+        $opcoes = new \Dompdf\Options();
+        $opcoes->set('defaultFont', 'DejaVu Sans');
+        $opcoes->set('isRemoteEnabled', true);
+
+        $dompdf = new \Dompdf\Dompdf($opcoes);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        $dompdf->stream($nomeArquivo, ['Attachment' => true]);
+        exit;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* EXPORTAR PDF — USUÁRIOS (rota legada mantida por compatibilidade)    */
+    /* ------------------------------------------------------------------ */
+
+    public function usuariosPdf(): void
+    {
+        $this->exportarPdf('usuarios');
+    }
+
+    /* ------------------------------------------------------------------ */
     /* EXPORTAR CSV                                                          */
     /* ------------------------------------------------------------------ */
 
@@ -86,10 +208,8 @@ class RelatorioController
         header('Pragma: no-cache');
 
         $out = fopen('php://output', 'w');
-        // BOM para Excel reconhecer UTF-8
-        fputs($out, "\xEF\xBB\xBF");
+        fputs($out, "\xEF\xBB\xBF"); // BOM para Excel reconhecer UTF-8
         fputcsv($out, $cabecalho, ';');
-
         foreach ($linhas as $linha) {
             fputcsv($out, $linha, ';');
         }
@@ -104,7 +224,7 @@ class RelatorioController
     {
         $sql = "SELECT p.titulo, p.status, p.data_inicio, p.data_fim,
                        u.nome AS responsavel, d.nome AS departamento,
-                       COUNT(DISTINCT t.id_tarefa)                                      AS total_tarefas,
+                       COUNT(DISTINCT t.id_tarefa) AS total_tarefas,
                        COUNT(DISTINCT CASE WHEN t.status='concluida' THEN t.id_tarefa END) AS concluidas
                 FROM projetos p
                 LEFT JOIN usuarios      u ON p.id_responsavel  = u.id_usuario
@@ -153,8 +273,8 @@ class RelatorioController
         $sql = "SELECT t.titulo, t.status, t.prioridade, t.data_vencimento,
                        p.titulo AS projeto, u.nome AS responsavel
                 FROM tarefas t
-                LEFT JOIN projetos  p ON t.id_projeto    = p.id_projeto
-                LEFT JOIN usuarios  u ON t.id_responsavel = u.id_usuario
+                LEFT JOIN projetos p ON t.id_projeto     = p.id_projeto
+                LEFT JOIN usuarios u ON t.id_responsavel = u.id_usuario
                 WHERE 1=1";
         $params = [];
 
@@ -220,9 +340,9 @@ class RelatorioController
                     COUNT(DISTINCT c.id_cargo)   AS total_cargos,
                     COUNT(DISTINCT p.id_projeto) AS total_projetos
              FROM departamentos d
-             LEFT JOIN usuarios  u ON u.id_departamento = d.id_departamento AND u.ativo = 1
-             LEFT JOIN cargos    c ON c.id_departamento = d.id_departamento
-             LEFT JOIN projetos  p ON p.id_departamento = d.id_departamento AND p.status != 'cancelado'
+             LEFT JOIN usuarios u ON u.id_departamento = d.id_departamento AND u.ativo = 1
+             LEFT JOIN cargos   c ON c.id_departamento = d.id_departamento
+             LEFT JOIN projetos p ON p.id_departamento = d.id_departamento AND p.status != 'cancelado'
              GROUP BY d.id_departamento
              ORDER BY d.nome"
         );

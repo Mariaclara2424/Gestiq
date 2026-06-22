@@ -75,6 +75,13 @@ $paginaAtual = 'dashboard';
         <span>Tarefas</span>
       </a>
 
+      <!-- AGENDA — link novo -->
+      <a href="<?= BASE_URL ?>/agenda"
+         class="nav-item <?= $paginaAtual === 'agenda' ? 'active' : '' ?>">
+        <i class="bi bi-calendar2-week"></i>
+        <span>Agenda</span>
+      </a>
+
       <?php if (Auth::can('admin')): ?>
       <a href="<?= BASE_URL ?>/usuarios"
          class="nav-item <?= $paginaAtual === 'usuarios' ? 'active' : '' ?>">

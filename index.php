@@ -5,6 +5,10 @@ error_reporting(E_ALL);
 require_once 'config/config.php';
 require_once 'helpers/Auth.php';
 
+// Carrega o Dompdf manualmente (sem Composer)
+// Certifique-se de que a pasta libs/dompdf existe com o autoload.inc.php dentro
+require_once __DIR__ . '/dompdf/autoload.inc.php';
+
 $url    = trim($_GET['url'] ?? 'login', '/');
 $parts  = explode('/', $url);
 $route  = $parts[0] ?? 'login';
@@ -38,14 +42,14 @@ switch ($route) {
         $method === 'POST' ? $c->doLogin() : $c->showLogin();
         break;
 
-    /* NOVA ROTA: CADASTRO */
+    /* CADASTRO */
     case 'cadastro':
         require_once 'controllers/AuthController.php';
         $c = new AuthController();
         $method === 'POST' ? $c->doCadastro() : $c->showCadastro();
         break;
 
-    /* NOVA ROTA: RECUPERAR SENHA */
+    /* RECUPERAR SENHA */
     case 'recuperar-senha':
         require_once 'controllers/AuthController.php';
         $c = new AuthController();
@@ -183,8 +187,21 @@ switch ($route) {
             $c->projetos();
         } elseif ($url === 'relatorios/tarefas') {
             $c->tarefas();
+        } elseif ($url === 'relatorios/usuarios/pdf') { // ← ROTA DO PDF DE USUÁRIOS
+            $c->usuariosPdf();
         } else {
             $c->index();
+        }
+        break;
+
+    /* AGENDA */
+    case 'agenda':
+        require_once 'controllers/AgendaController.php';
+        $c = new AgendaController();
+        if ($url === 'agenda/criar') {
+            $method === 'POST' ? $c->store() : $c->create();
+        } else {
+            $c->dashboard();
         }
         break;
 
