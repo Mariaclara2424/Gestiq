@@ -1,8 +1,10 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 require_once 'AgendaService.php';
+
+// Mostra erros na tela só quando APP_DEBUG=true no .env
+$debug = filter_var(env('APP_DEBUG', 'true'), FILTER_VALIDATE_BOOLEAN);
+ini_set('display_errors', $debug ? '1' : '0');
+error_reporting(E_ALL);
 
 // Se tiver um ficheiro central de conexão à base de dados (ex: config.php ou conexao.php),
 // pode incluí-lo aqui. Caso contrário, usamos o PDO direto abaixo.
@@ -28,7 +30,11 @@ if (isset($_GET['code'])) {
         
         try {
             // 3. Conexão com o MySQL do XAMPP
-            $pdo = new PDO("mysql:host=localhost;dbname=gestiq;charset=utf8", "root", "");
+            $pdo = new PDO(
+                'mysql:host=' . env('DB_HOST', 'localhost') . ';port=' . env('DB_PORT', '3306') . ';dbname=' . env('DB_NAME', 'gestiq') . ';charset=utf8',
+                env('DB_USER', 'root'),
+                env('DB_PASS', '')
+            );
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             // 4. Verifica se este usuário já tem algum token antigo gravado

@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/config/env.php';
 
 class AgendaService
 {
@@ -13,9 +14,9 @@ class AgendaService
     public function __construct()
     {
         $this->client = new Google\Client();
-        $this->client->setAuthConfig(__DIR__ . '/credentials.json');
+        $this->client->setAuthConfig(env('GOOGLE_CREDENTIALS_PATH', __DIR__ . '/credentials.json'));
         $this->client->addScope(Google\Service\Calendar::CALENDAR);
-        $this->client->setRedirectUri('http://localhost/gestiq/callback_google.php');
+        $this->client->setRedirectUri(env('GOOGLE_REDIRECT_URI', 'http://localhost/gestiq/callback_google.php'));
         $this->client->setAccessType('offline');
         $this->client->setApprovalPrompt('force');
     }
@@ -52,7 +53,11 @@ class AgendaService
      */
     private function getClientAutenticado(int $usuario_id): Google\Client
     {
-        $pdo = new PDO("mysql:host=localhost;dbname=gestiq;charset=utf8", "root", "");
+        $pdo = new PDO(
+            'mysql:host=' . env('DB_HOST', 'localhost') . ';port=' . env('DB_PORT', '3306') . ';dbname=' . env('DB_NAME', 'gestiq') . ';charset=utf8',
+            env('DB_USER', 'root'),
+            env('DB_PASS', '')
+        );
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $stmt = $pdo->prepare(

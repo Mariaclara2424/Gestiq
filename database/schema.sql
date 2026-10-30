@@ -1,5 +1,8 @@
-DROP DATABASE IF EXISTS gestiq;
-CREATE DATABASE gestiq;
+-- Estrutura do banco do GESTIQ (sem dados)
+-- Uso: mysql -u root -p < database/schema.sql
+
+CREATE DATABASE IF NOT EXISTS gestiq
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE gestiq;
 
 CREATE TABLE departamentos (
@@ -84,27 +87,6 @@ CREATE TABLE comentarios (
     CONSTRAINT fk_coment_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO departamentos (nome, descricao) VALUES 
-('Tecnologia da Informação', 'Desenvolvimento'), 
-('Recursos Humanos', 'RH'), 
-('Marketing', 'Marketing');
-
-INSERT INTO cargos (nome, descricao, id_departamento) VALUES 
-('Desenvolvedor PHP', 'Dev', 1), 
-('Analista de Sistemas', 'Analista', 1), 
-('Gerente de TI', 'Gestão', 1);
-
-INSERT INTO usuarios (nome, email, senha, perfil, id_departamento, id_cargo) VALUES 
-('Administrador Sistema', 'admin@gestiq.com', '$2y$10$VhLTXOSDwUzV0K0zUmPQC.RUmfSN.G4XPp6ehyukArwzyAGKLjmm2', 'admin', 1, 3),
-('João Silva', 'joao@gestiq.com', '$2y$10$VhLTXOSDwUzV0K0zUmPQC.RUmfSN.G4XPp6ehyukArwzyAGKLjmm2', 'gestor', 1, 2),
-('Maria Souza', 'maria@gestiq.com', '$2y$10$VhLTXOSDwUzV0K0zUmPQC.RUmfSN.G4XPp6ehyukArwzyAGKLjmm2', 'colaborador', 1, 1);
-
-INSERT INTO projetos (titulo, descricao, data_inicio, data_fim, status, id_responsavel, id_departamento) VALUES 
-('Novo Site', 'Site corp.', '2025-01-10', '2025-06-30', 'em_andamento', 2, 1);
-
-INSERT INTO tarefas (titulo, descricao, id_projeto, id_responsavel, data_vencimento, status, prioridade) VALUES 
-('Wireframes', 'Telas', 1, 3, '2025-02-28', 'concluida', 'alta');
-
 CREATE TABLE google_tokens (
     id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
     usuario_id    INT UNSIGNED NOT NULL,
@@ -114,11 +96,3 @@ CREATE TABLE google_tokens (
     PRIMARY KEY (id),
     UNIQUE KEY uq_usuario (usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-O INT UNSIGNED precisa bater exatamente com o tipo do id_usuario na tabela usuarios.
-
-Depois de recriar a tabela, tente conectar o Google Calendar novamente. Se aparecer um erro diferente, me manda o texto exato que eu identifico na hora.Você disse: me manda o link do phpadminme manda o link do phpadmin12:24Claude respondeu: Não tenho como te mandar um link do phpMyAdmin — ele roda localmente na sua máquina, não na internet.Não tenho como te mandar um link do phpMyAdmin — ele roda localmente na sua máquina, não na internet.
-Acesse direto pelo navegador:
-http://localhost/phpmyadmin
-ou
-http://127.0.0.1/phpmyadmin
-O XAMPP precisa estar rodando (painel do XAMPP com Apache e MySQL em verde). Se quiser, também pode abrir direto pelo painel do XAMPP clicando em Admin na linha do MySQL.

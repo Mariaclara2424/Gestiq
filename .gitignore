@@ -1,0 +1,33 @@
+# Configuração e segredos
+.env
+.env.*
+!.env.example
+credentials.json
+client_secret*.json
+token.json
+
+# Dependências
+/vendor/
+composer.phar
+
+# Banco de dados, logs e backups
+*.sql
+!database/schema.sql
+!database/seed.sql
+*.log
+logs/
+*.bak
+*.zip
+
+# Arquivos gerados
+uploads/
+*.pdf
+*.ics
+
+# IDE e sistema
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
