@@ -1,6 +1,12 @@
 RewriteEngine On
 RewriteBase /gestiq/
 
+# Bloqueia o acesso pelo navegador a arquivos e pastas internas
+<FilesMatch "^(\.env.*|credentials\.json|client_secret.*\.json|token\.json|composer\.(json|lock|phar)|.*\.sql|.*\.log|.*\.md)$">
+    Require all denied
+</FilesMatch>
+RewriteRule ^(config|database|scripts|helpers|models|controllers|views|vendor|dompdf)(/|$) - [F,L]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

@@ -1,8 +1,10 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 require_once 'config/config.php';
+// Mostra erros na tela só quando APP_DEBUG=true no .env
+$debug = filter_var(env('APP_DEBUG', 'true'), FILTER_VALIDATE_BOOLEAN);
+ini_set('display_errors', $debug ? '1' : '0');
+ini_set('display_startup_errors', $debug ? '1' : '0');
+error_reporting(E_ALL);
 require_once 'helpers/Auth.php';
 
 // Carrega o Dompdf manualmente (sem Composer)
